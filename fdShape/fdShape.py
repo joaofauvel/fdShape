@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple
 
 import fdSencode
 from common import VertexType
@@ -15,7 +14,8 @@ class fdShapeTypes(Enum):
     CURVEDTRACK = 'CurvedTrack'
     BOUNDARY = 'Boundary'
 
-class Vertex(NamedTuple):
+@dataclass
+class Vertex:
     x: float
     y: float
 
