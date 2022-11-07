@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "fdshape"
+version = "0.1.0"
+description = "fdShape library"
+authors = ["João Fauvel"]
+readme = "README.md"
+build = 'build.py'
+
+[tool.poetry.dependencies]
+python = "^3.10"
+kaitaistruct = "^0.10"
+
+
+[tool.poetry.group.extras.dependencies]
+fiona = "^1.8.22"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

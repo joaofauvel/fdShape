@@ -7,7 +7,7 @@ from common import VertexType
 from decoder import fdSdecode
 from exceptions import NotWGS84Error, InvalidGeometryType
 
-# Warning: *_file methods won't be work without fiona
+# Warning: *_file methods won't work without fiona
 
 
 class fdShapeTypes(Enum):
@@ -30,15 +30,18 @@ class fdShape(ABC):
 
 class CurvedTrack(fdShape):
     def __init__(self, features: list[Feature], reference_x: int, reference_y: int) -> None:
+        # This file format uses a reference vertex (usually the absolute latlon coordinates 
+        # of the first vertex of the first feature) where all vertices encoded in the file
+        # offset from. This reference vertex is stored in the spatial catalog of the GS3 card.
         super().__init__(fdShapeTypes.CURVEDTRACK, features)
-        # reference x and y defined as the first vertex of the first feature
+        # Reference x and y defined as the first vertex of the first feature
         self.ref_x = reference_x
         self.ref_y = reference_y
 
     def vertex_count(self) -> int:
         return sum([len(feat.vertices) for feat in self.features])
 
-    def to_wkt(self) -> str:
+    def _wkt(self) -> str:
         wkt_features_list = ['wkt_geom\n']
         for feat in self.features:
             wkt_feat_list = [f'{vertex.x} {vertex.y}' for vertex in feat.vertices]
@@ -46,10 +49,13 @@ class CurvedTrack(fdShape):
             wkt_features_list.append(wkt_feat)
         return ''.join(wkt_features_list)
 
+    def to_wkt(self, path: str) -> None:
+        with open(path, 'w') as f:
+            f.write(self._wkt())
+
     def to_file(self, path: str) -> None:
         # TODO: check file extension
-        with open(path, 'w') as f:
-            f.write(self.to_wkt())
+        pass
 
     def to_fdShape(self, path: str, **kwargs) -> None:
         with open(path, 'wb') as f:
@@ -59,7 +65,8 @@ class CurvedTrack(fdShape):
         if not insert_duplicate_bytes:
             vertex_count = self.vertex_count()
         else:
-            # vertex count + 1 duplicate byte per feature, except last one (that's how its encoded with GLC/Apex)
+            # vertex count + 1 duplicate vertex per feature, 
+            # except last one (that's how its encoded with GLC/Apex, but it might be a bug)
             vertex_count = self.vertex_count()+(len(self.features)-1)
         # adding 1 to the vertex count due to prefix vertex, which adds to the vertex count
         ba_list: list[bytes] = [fdSencode.encode_header(vertex_count+1, prefix_x, prefix_y)]
@@ -82,6 +89,7 @@ class CurvedTrack(fdShape):
     
     @classmethod
     def from_file(cls, path: str, ref_x: float = None, ref_y: float = None, **kwargs) -> 'CurvedTrack':
+        '''Creates a new CurvedTrack object from a shapefile with PolyLine (single or multipart*) '''
         features = cls._collection2features(path, **kwargs)
         # reference x and y defined as the first vertex of the first feature
         ref_x = features[0].vertices[0].x if not ref_x else ref_x
@@ -145,4 +153,4 @@ def to_file(fdShape: fdShape, path: str = '.') -> None:
     pass
 
 if __name__ == '__main__':
-    print(fdSencode.__doc__)
+    pass
